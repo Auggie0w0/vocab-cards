@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vocab Cards</title>
+    <style>
+        :root {
+            /* Light theme variables */
+            --bg-primary: #ffffff;
+            --bg-secondary: #f7f7f7;
+            --text-primary: #333333;
+            --text-secondary: #6b7280;
+            --border-color: #e5e7eb;
+            --accent-color: #3b82f6;
+            --card-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            --hover-bg: #f3f4f6;
+        }
+
+        [data-theme="dark"] {
+            /* Dark theme variables */
+            --bg-primary: #1f2937;
+            --bg-secondary: #111827;
+            --text-primary: #f3f4f6;
+            --text-secondary: #9ca3af;
+            --border-color: #374151;
+            --accent-color: #60a5fa;
+            --card-shadow: 0 1px 3px rgba(0,0,0,0.3);
+            --hover-bg: #374151;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            transition: background-color 0.3s, color 0.3s;
+            line-height: 1.5;
+            min-height: 100vh;
+        }
+
+        /* Layout */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1rem;
+        }
+
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 0;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 2rem;
+        }
+
+        .app-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 1rem;
+        }
+
+        /* Cards */
+        .card {
+            background-color: var(--bg-primary);
+            border-radius: 0.5rem;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--card-shadow);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+
+        /* Grid layout */
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Buttons */
+        .btn {
+            background-color: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 0.25rem;
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .btn:hover {
+            background-color: var(--hover-bg);
+        }
+
+        .btn-primary {
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+        }
+
+        .btn-primary:hover {
+            opacity: 0.9;
+        }
+
+        /* Form elements */
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid var(--border-color);
+            border-radius: 0.25rem;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--accent-color);
+        }
+
+        /* Utility classes */
+        .hidden {
+            display: none;
+        }
+
+        .mb-1 {
+            margin-bottom: 0.25rem;
+        }
+
+        .mb-2 {
+            margin-bottom: 0.5rem;
+        }
+
+        .mb-4 {
+            margin-bottom: 1rem;
+        }
+
+        .text-secondary {
+            color: var(--text-secondary);
+        }
+
+        /* Flashcard specific styles */
+        .flashcard {
+            min-height: 300px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            cursor: pointer;
+        }
+
+        .flashcard-word {
+            font-size: 2rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        .flashcard-meaning {
+            font-size: 1.25rem;
+            margin-bottom: 1rem;
+        }
+
+        .flashcard-example {
+            font-style: italic;
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+        }
+
+        .rating-buttons {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="topbar">
+            <div class="app-title">Vocab Cards</div>
+            <div class="nav-buttons">
+                <button id="btnLibrary" class="btn">Library</button>
+                <button id="btnStudy" class="btn">Study</button>
+                <button id="btnToggleDark" class="btn">🌙</button>
+            </div>
+        </div>
+
+        <section id="viewLibrary">
+            <div class="grid">
+                <!-- Left card: Form + Search/List -->
+                <div class="card">
+                    <h2 class="card-title">Add New Word</h2>
+                    <form id="wordForm">
+                        <div class="form-group">
+                            <label class="form-label" for="word">Word</label>
+                            <input type="text" id="word" class="form-input" placeholder="Enter word or phrase">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="meaning">Meaning</label>
+                            <textarea id="meaning" class="form-input" rows="2" placeholder="Enter definition"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="example">Example</label>
+                            <textarea id="example" class="form-input" rows="2" placeholder="Enter example usage"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="notes">Notes/Context (optional)</label>
+                            <textarea id="notes" class="form-input" rows="2" placeholder="Enter any additional notes"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="folder">Folder</label>
+                            <input type="text" id="folder" class="form-input" placeholder="Enter folder name">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Add Word</button>
+                    </form>
+
+                    <div class="mb-4"></div>
+                    
+                    <h2 class="card-title">Your Words</h2>
+                    <div class="form-group">
+                        <input type="text" id="search" class="form-input" placeholder="Search words...">
+                    </div>
+                    <div id="wordsList">
+                        <!-- Words will be listed here -->
+                        <div class="text-secondary">No words added yet</div>
+                    </div>
+                </div>
+
+                <!-- Right card: Study stats -->
+                <div class="card">
+                    <h2 class="card-title">Study Statistics</h2>
+                    <div class="mb-2">
+                        <div class="text-secondary">Total words:</div>
+                        <div id="totalWords">0</div>
+                    </div>
+                    <div class="mb-2">
+                        <div class="text-secondary">Words studied today:</div>
+                        <div id="wordsStudied">0</div>
+                    </div>
+                    <div class="mb-2">
+                        <div class="text-secondary">Folders:</div>
+                        <div id="foldersList">
+                            <!-- Folders will be listed here -->
+                            <div>No folders created yet</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="viewStudy" class="hidden">
+            <div class="card flashcard" id="flashcard">
+                <div id="flashcardFront">
+                    <div class="flashcard-word" id="studyWord">Word</div>
+                    <div class="text-secondary">Click to reveal meaning</div>
+                </div>
+                <div id="flashcardBack" class="hidden">
+                    <div class="flashcard-meaning" id="studyMeaning">Meaning</div>
+                    <div class="flashcard-example" id="studyExample">Example</div>
+                    <div class="text-secondary" id="studyNotes">Notes</div>
+                </div>
+            </div>
+            
+            <div class="rating-buttons">
+                <button class="btn" id="btnHard">Hard</button>
+                <button class="btn" id="btnMedium">Medium</button>
+                <button class="btn" id="btnEasy">Easy</button>
+                <button class="btn" id="btnNext">Next</button>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        // DOM element references
+        const btnLibrary = document.getElementById('btnLibrary');
+        const btnStudy = document.getElementById('btnStudy');
+        const btnToggleDark = document.getElementById('btnToggleDark');
+        const viewLibrary = document.getElementById('viewLibrary');
+        const viewStudy = document.getElementById('viewStudy');
+        const flashcard = document.getElementById('flashcard');
+        const flashcardFront = document.getElementById('flashcardFront');
+        const flashcardBack = document.getElementById('flashcardBack');
+
+        // Switch between views
+        function switchView(viewName) {
+            if (viewName === 'library') {
+                viewLibrary.classList.remove('hidden');
+                viewStudy.classList.add('hidden');
+                btnLibrary.classList.add('btn-primary');
+                btnStudy.classList.remove('btn-primary');
+            } else if (viewName === 'study') {
+                viewLibrary.classList.add('hidden');
+                viewStudy.classList.remove('hidden');
+                btnLibrary.classList.remove('btn-primary');
+                btnStudy.classList.add('btn-primary');
+            }
+        }
+
+        // Toggle dark mode
+        function toggleDarkMode() {
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            if (isDark) {
+                document.documentElement.removeAttribute('data-theme');
+                btnToggleDark.textContent = '🌙';
+                localStorage.setItem('theme', 'light');
+            } else {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                btnToggleDark.textContent = '☀️';
+                localStorage.setItem('theme', 'dark');
+            }
+        }
+
+        // Flip flashcard
+        function toggleFlashcard() {
+            flashcardFront.classList.toggle('hidden');
+            flashcardBack.classList.toggle('hidden');
+        }
+
+        // Event listeners
+        btnLibrary.addEventListener('click', () => switchView('library'));
+        btnStudy.addEventListener('click', () => switchView('study'));
+        btnToggleDark.addEventListener('click', toggleDarkMode);
+        flashcard.addEventListener('click', toggleFlashcard);
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            // Set initial view
+            switchView('library');
+            btnLibrary.classList.add('btn-primary');
+            
+            // Check for saved theme preference
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                btnToggleDark.textContent = '☀️';
+            }
+        });
+    </script>
+</body>
+</html>
