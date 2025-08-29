@@ -366,6 +366,7 @@
         
         let currentStudyIndex = 0;
         let studyQueue = [];
+        let currentFolderFilter = '';
         
         // Load data from localStorage
         function loadData() {
@@ -432,16 +433,21 @@
         }
         
         // Render words list
-        function renderWordsList(searchTerm = '', folderFilter = '') {
+        function renderWordsList(searchTerm = '', folderFilter = null) {
             // Clear current list
             wordsList.innerHTML = '';
+            
+            // Update the current folder filter if a new one is provided
+            if (folderFilter !== null) {
+                currentFolderFilter = folderFilter;
+            }
             
             // Filter words by search term and folder if provided
             let filteredWords = vocabData.words;
             
-            // Apply folder filter first if provided
-            if (folderFilter) {
-                filteredWords = filteredWords.filter(word => word.folder === folderFilter);
+            // Apply folder filter first if active
+            if (currentFolderFilter) {
+                filteredWords = filteredWords.filter(word => word.folder === currentFolderFilter);
             }
             
             // Then apply search term filter if provided
@@ -458,10 +464,10 @@
                 const noWordsMsg = document.createElement('div');
                 noWordsMsg.className = 'text-secondary';
                 
-                if (folderFilter && searchTerm) {
-                    noWordsMsg.textContent = `No matching words found in folder "${folderFilter}"`;
-                } else if (folderFilter) {
-                    noWordsMsg.textContent = `No words in folder "${folderFilter}"`;
+                if (currentFolderFilter && searchTerm) {
+                    noWordsMsg.textContent = `No matching words found in folder "${currentFolderFilter}"`;
+                } else if (currentFolderFilter) {
+                    noWordsMsg.textContent = `No words in folder "${currentFolderFilter}"`;
                 } else if (searchTerm) {
                     noWordsMsg.textContent = 'No matching words found';
                 } else {
@@ -473,7 +479,7 @@
             }
             
             // Add folder filter indicator if active
-            if (folderFilter) {
+            if (currentFolderFilter) {
                 const filterIndicator = document.createElement('div');
                 filterIndicator.className = 'mb-2';
                 filterIndicator.style.display = 'flex';
@@ -484,14 +490,17 @@
                 filterIndicator.style.borderRadius = '0.25rem';
                 
                 const filterText = document.createElement('div');
-                filterText.textContent = `Showing folder: ${folderFilter}`;
+                filterText.textContent = `Showing folder: ${currentFolderFilter}`;
                 
                 const clearBtn = document.createElement('button');
                 clearBtn.className = 'btn';
                 clearBtn.textContent = 'Clear';
                 clearBtn.style.padding = '0.15rem 0.5rem';
                 clearBtn.style.fontSize = '0.75rem';
-                clearBtn.addEventListener('click', () => renderWordsList(searchTerm));
+                clearBtn.addEventListener('click', () => {
+                    currentFolderFilter = '';
+                    renderWordsList(searchTerm);
+                });
                 
                 filterIndicator.appendChild(filterText);
                 filterIndicator.appendChild(clearBtn);
@@ -575,7 +584,8 @@
                 viewBtn.style.fontSize = '0.75rem';
                 
                 // Add click event to filter words by folder
-                viewBtn.addEventListener('click', () => {
+                viewBtn.addEventListener('click', (e) => {
+                    e.stopPropagation(); // Prevent event bubbling
                     renderWordsList('', folder);
                 });
                 
@@ -811,7 +821,7 @@
         
         // Search functionality
         searchInput.addEventListener('input', (e) => {
-            renderWordsList(e.target.value.trim());
+            renderWordsList(e.target.value.trim(), null); // null to keep current folder filter
         });
         
         // Study buttons
