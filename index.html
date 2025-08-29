@@ -314,6 +314,257 @@
         const flashcard = document.getElementById('flashcard');
         const flashcardFront = document.getElementById('flashcardFront');
         const flashcardBack = document.getElementById('flashcardBack');
+        const wordForm = document.getElementById('wordForm');
+        const wordsList = document.getElementById('wordsList');
+        const searchInput = document.getElementById('search');
+        const totalWordsEl = document.getElementById('totalWords');
+        const wordsStudiedEl = document.getElementById('wordsStudied');
+        const foldersListEl = document.getElementById('foldersList');
+        const btnHard = document.getElementById('btnHard');
+        const btnMedium = document.getElementById('btnMedium');
+        const btnEasy = document.getElementById('btnEasy');
+        const btnNext = document.getElementById('btnNext');
+        
+        // Data storage
+        let vocabData = {
+            words: [],
+            stats: {
+                wordsStudied: 0,
+                lastStudyDate: null
+            }
+        };
+        
+        let currentStudyIndex = 0;
+        let studyQueue = [];
+        
+        // Load data from localStorage
+        function loadData() {
+            const savedData = localStorage.getItem('vocabCardsData');
+            if (savedData) {
+                vocabData = JSON.parse(savedData);
+            }
+            updateStats();
+            renderWordsList();
+            renderFoldersList();
+        }
+        
+        // Save data to localStorage
+        function saveData() {
+            localStorage.setItem('vocabCardsData', JSON.stringify(vocabData));
+        }
+        
+        // Add new word
+        function addWord(wordData) {
+            const newWord = {
+                id: Date.now().toString(),
+                word: wordData.word,
+                meaning: wordData.meaning,
+                example: wordData.example,
+                notes: wordData.notes,
+                folder: wordData.folder || 'General',
+                dateAdded: new Date().toISOString(),
+                difficulty: 'medium', // default difficulty
+                lastStudied: null
+            };
+            
+            vocabData.words.push(newWord);
+            saveData();
+            updateStats();
+            renderWordsList();
+            renderFoldersList();
+        }
+        
+        // Delete word
+        function deleteWord(id) {
+            vocabData.words = vocabData.words.filter(word => word.id !== id);
+            saveData();
+            updateStats();
+            renderWordsList();
+            renderFoldersList();
+        }
+        
+        // Update statistics
+        function updateStats() {
+            // Update total words count
+            totalWordsEl.textContent = vocabData.words.length;
+            
+            // Check if last study was today
+            const today = new Date().toDateString();
+            const lastStudyDate = vocabData.stats.lastStudyDate ? new Date(vocabData.stats.lastStudyDate).toDateString() : null;
+            
+            // Reset study count if it's a new day
+            if (lastStudyDate !== today) {
+                vocabData.stats.wordsStudied = 0;
+            }
+            
+            // Update words studied today
+            wordsStudiedEl.textContent = vocabData.stats.wordsStudied;
+        }
+        
+        // Render words list
+        function renderWordsList(searchTerm = '') {
+            // Clear current list
+            wordsList.innerHTML = '';
+            
+            // Filter words by search term if provided
+            let filteredWords = vocabData.words;
+            if (searchTerm) {
+                const term = searchTerm.toLowerCase();
+                filteredWords = vocabData.words.filter(word => 
+                    word.word.toLowerCase().includes(term) || 
+                    word.meaning.toLowerCase().includes(term) ||
+                    word.folder.toLowerCase().includes(term)
+                );
+            }
+            
+            // Show message if no words
+            if (filteredWords.length === 0) {
+                const noWordsMsg = document.createElement('div');
+                noWordsMsg.className = 'text-secondary';
+                noWordsMsg.textContent = searchTerm ? 'No matching words found' : 'No words added yet';
+                wordsList.appendChild(noWordsMsg);
+                return;
+            }
+            
+            // Create list of words
+            filteredWords.forEach(word => {
+                const wordItem = document.createElement('div');
+                wordItem.className = 'mb-2';
+                wordItem.style.padding = '0.5rem';
+                wordItem.style.borderBottom = '1px solid var(--border-color)';
+                
+                const wordTitle = document.createElement('div');
+                wordTitle.style.display = 'flex';
+                wordTitle.style.justifyContent = 'space-between';
+                wordTitle.style.alignItems = 'center';
+                
+                const wordText = document.createElement('strong');
+                wordText.textContent = word.word;
+                
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'btn';
+                deleteBtn.textContent = '✕';
+                deleteBtn.style.padding = '0.25rem 0.5rem';
+                deleteBtn.addEventListener('click', () => deleteWord(word.id));
+                
+                wordTitle.appendChild(wordText);
+                wordTitle.appendChild(deleteBtn);
+                
+                const wordMeaning = document.createElement('div');
+                wordMeaning.textContent = word.meaning;
+                
+                const wordFolder = document.createElement('div');
+                wordFolder.className = 'text-secondary';
+                wordFolder.style.fontSize = '0.8rem';
+                wordFolder.textContent = `Folder: ${word.folder}`;
+                
+                wordItem.appendChild(wordTitle);
+                wordItem.appendChild(wordMeaning);
+                wordItem.appendChild(wordFolder);
+                
+                wordsList.appendChild(wordItem);
+            });
+        }
+        
+        // Render folders list
+        function renderFoldersList() {
+            // Clear current list
+            foldersListEl.innerHTML = '';
+            
+            // Get unique folders
+            const folders = [...new Set(vocabData.words.map(word => word.folder))];
+            
+            // Show message if no folders
+            if (folders.length === 0) {
+                const noFoldersMsg = document.createElement('div');
+                noFoldersMsg.textContent = 'No folders created yet';
+                foldersListEl.appendChild(noFoldersMsg);
+                return;
+            }
+            
+            // Create list of folders with word counts
+            folders.forEach(folder => {
+                const count = vocabData.words.filter(word => word.folder === folder).length;
+                const folderItem = document.createElement('div');
+                folderItem.textContent = `${folder} (${count})`;
+                foldersListEl.appendChild(folderItem);
+            });
+        }
+        
+        // Prepare study session
+        function prepareStudySession() {
+            // Reset study queue with all words
+            studyQueue = [...vocabData.words];
+            
+            // Shuffle the queue
+            studyQueue.sort(() => Math.random() - 0.5);
+            
+            currentStudyIndex = 0;
+            
+            // Load first card if we have words
+            if (studyQueue.length > 0) {
+                loadCurrentCard();
+            } else {
+                // Show message if no words to study
+                document.getElementById('studyWord').textContent = 'No words to study';
+                document.getElementById('studyMeaning').textContent = 'Add words in the Library section';
+                document.getElementById('studyExample').textContent = '';
+                document.getElementById('studyNotes').textContent = '';
+            }
+        }
+        
+        // Load current flashcard
+        function loadCurrentCard() {
+            if (currentStudyIndex < studyQueue.length) {
+                const currentWord = studyQueue[currentStudyIndex];
+                
+                // Reset card to front side
+                flashcardFront.classList.remove('hidden');
+                flashcardBack.classList.add('hidden');
+                
+                // Update card content
+                document.getElementById('studyWord').textContent = currentWord.word;
+                document.getElementById('studyMeaning').textContent = currentWord.meaning;
+                document.getElementById('studyExample').textContent = currentWord.example || 'No example provided';
+                document.getElementById('studyNotes').textContent = currentWord.notes || '';
+                
+                // Mark word as studied
+                const today = new Date().toISOString();
+                currentWord.lastStudied = today;
+                vocabData.stats.lastStudyDate = today;
+                vocabData.stats.wordsStudied++;
+                
+                saveData();
+                updateStats();
+            } else {
+                // End of study session
+                document.getElementById('studyWord').textContent = 'Study Complete!';
+                document.getElementById('studyMeaning').textContent = 'You have reviewed all words';
+                document.getElementById('studyExample').textContent = '';
+                document.getElementById('studyNotes').textContent = '';
+            }
+        }
+        
+        // Move to next card
+        function nextCard() {
+            currentStudyIndex++;
+            loadCurrentCard();
+        }
+        
+        // Update word difficulty
+        function updateDifficulty(difficulty) {
+            if (currentStudyIndex < studyQueue.length) {
+                const wordId = studyQueue[currentStudyIndex].id;
+                const wordIndex = vocabData.words.findIndex(w => w.id === wordId);
+                
+                if (wordIndex !== -1) {
+                    vocabData.words[wordIndex].difficulty = difficulty;
+                    saveData();
+                }
+                
+                nextCard();
+            }
+        }
 
         // Switch between views
         function switchView(viewName) {
@@ -327,6 +578,7 @@
                 viewStudy.classList.remove('hidden');
                 btnLibrary.classList.remove('btn-primary');
                 btnStudy.classList.add('btn-primary');
+                prepareStudySession();
             }
         }
 
@@ -355,9 +607,48 @@
         btnStudy.addEventListener('click', () => switchView('study'));
         btnToggleDark.addEventListener('click', toggleDarkMode);
         flashcard.addEventListener('click', toggleFlashcard);
+        
+        // Form submission
+        wordForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const wordData = {
+                word: document.getElementById('word').value.trim(),
+                meaning: document.getElementById('meaning').value.trim(),
+                example: document.getElementById('example').value.trim(),
+                notes: document.getElementById('notes').value.trim(),
+                folder: document.getElementById('folder').value.trim() || 'General'
+            };
+            
+            // Validate required fields
+            if (!wordData.word || !wordData.meaning) {
+                alert('Word and meaning are required!');
+                return;
+            }
+            
+            // Add the word
+            addWord(wordData);
+            
+            // Reset form
+            wordForm.reset();
+        });
+        
+        // Search functionality
+        searchInput.addEventListener('input', (e) => {
+            renderWordsList(e.target.value.trim());
+        });
+        
+        // Study buttons
+        btnHard.addEventListener('click', () => updateDifficulty('hard'));
+        btnMedium.addEventListener('click', () => updateDifficulty('medium'));
+        btnEasy.addEventListener('click', () => updateDifficulty('easy'));
+        btnNext.addEventListener('click', nextCard);
 
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
+            // Load saved data
+            loadData();
+            
             // Set initial view
             switchView('library');
             btnLibrary.classList.add('btn-primary');
