@@ -8,48 +8,60 @@ A simple but effective platform for studying, reviewing, and memorizing vocabula
 - Organize cards into folders/collections
 - Clean, minimal UI inspired by Notion
 - Easy to use for personal learning
-- Docker support for easy deployment
+- Data persists in your browser's localStorage
+- Vercel deployment for easy hosting
 
 ## Development
 
-This project is currently in development.
+This project is a single-page application built with vanilla HTML, CSS, and JavaScript.
 
-## Docker Setup
+## Local Development
 
-### Using Docker Compose (Recommended)
+To run the application locally:
 
-1. Make sure you have Docker and Docker Compose installed on your system
-2. Clone this repository
-3. Run the application:
-
-```bash
-docker-compose up -d
-```
-
-4. Access the application at http://localhost:8080
-
-### Using Docker directly
-
-1. Build the Docker image:
+1. Clone this repository
+2. Start a local server (any of these options):
 
 ```bash
-docker build -t vocab-cards .
+# Using Python
+python -m http.server 8000
+
+# Using Node.js (if you have it installed)
+npx serve
 ```
 
-2. Run the container:
+3. Access the application at http://localhost:8000 (or the port shown in your terminal)
+
+## Vercel Deployment
+
+This project is configured for easy deployment on Vercel.
+
+### Deploying to Vercel
+
+1. Push your code to a GitHub repository
+2. Go to [Vercel](https://vercel.com) and sign up/login
+3. Click "New Project" and import your GitHub repository
+4. Keep the default settings (Vercel will automatically detect the static HTML project)
+5. Click "Deploy"
+
+### Using Vercel CLI
+
+If you prefer using the command line:
+
+1. Install Vercel CLI:
 
 ```bash
-docker run -p 8080:80 -d vocab-cards
+npm install -g vercel
 ```
 
-3. Access the application at http://localhost:8080
-
-### Development with Docker
-
-For development with live-reloading of changes:
+2. Navigate to your project directory and run:
 
 ```bash
-docker-compose up
+vercel
 ```
 
-This will mount your local index.html file into the container, so any changes you make will be immediately reflected.
+3. Follow the prompts to deploy your project
+
+### Configuration
+
+The included `vercel.json` file configures Vercel to properly serve your static site. No additional configuration is needed.
