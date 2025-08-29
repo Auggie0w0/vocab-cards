@@ -260,7 +260,7 @@
                     </div>
                 </div>
 
-                <!-- Right card: Study stats -->
+                <!-- Right card: Study stats and folder management -->
                 <div class="card">
                     <h2 class="card-title">Study Statistics</h2>
                     <div class="mb-2">
@@ -271,8 +271,22 @@
                         <div class="text-secondary">Words studied today:</div>
                         <div id="wordsStudied">0</div>
                     </div>
+                    
+                    <div class="mb-4"></div>
+                    
+                    <h2 class="card-title">Folder Management</h2>
+                    <div class="form-group">
+                        <label class="form-label" for="folderManage">Manage Folders</label>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <select id="folderManage" class="form-input" style="flex-grow: 1;">
+                                <!-- Folders will be populated here -->
+                            </select>
+                            <button id="btnRenameFolder" class="btn">Rename</button>
+                        </div>
+                    </div>
+                    
                     <div class="mb-2">
-                        <div class="text-secondary">Folders:</div>
+                        <div class="text-secondary">Your Folders:</div>
                         <div id="foldersList">
                             <!-- Folders will be listed here -->
                             <div>No folders created yet</div>
@@ -283,6 +297,18 @@
         </section>
 
         <section id="viewStudy" class="hidden">
+            <div class="card mb-4">
+                <h2 class="card-title">Study Settings</h2>
+                <div class="form-group">
+                    <label class="form-label" for="studyFolder">Select Folder to Study</label>
+                    <select id="studyFolder" class="form-input">
+                        <option value="all">All Folders</option>
+                        <!-- Folders will be populated here -->
+                    </select>
+                </div>
+                <button id="btnStartStudy" class="btn btn-primary">Start Study Session</button>
+            </div>
+            
             <div class="card flashcard" id="flashcard">
                 <div id="flashcardFront">
                     <div class="flashcard-word" id="studyWord">Word</div>
@@ -324,6 +350,10 @@
         const btnMedium = document.getElementById('btnMedium');
         const btnEasy = document.getElementById('btnEasy');
         const btnNext = document.getElementById('btnNext');
+        const studyFolderSelect = document.getElementById('studyFolder');
+        const btnStartStudy = document.getElementById('btnStartStudy');
+        const folderManageSelect = document.getElementById('folderManage');
+        const btnRenameFolder = document.getElementById('btnRenameFolder');
         
         // Data storage
         let vocabData = {
@@ -402,18 +432,24 @@
         }
         
         // Render words list
-        function renderWordsList(searchTerm = '') {
+        function renderWordsList(searchTerm = '', folderFilter = '') {
             // Clear current list
             wordsList.innerHTML = '';
             
-            // Filter words by search term if provided
+            // Filter words by search term and folder if provided
             let filteredWords = vocabData.words;
+            
+            // Apply folder filter first if provided
+            if (folderFilter) {
+                filteredWords = filteredWords.filter(word => word.folder === folderFilter);
+            }
+            
+            // Then apply search term filter if provided
             if (searchTerm) {
                 const term = searchTerm.toLowerCase();
-                filteredWords = vocabData.words.filter(word => 
+                filteredWords = filteredWords.filter(word => 
                     word.word.toLowerCase().includes(term) || 
-                    word.meaning.toLowerCase().includes(term) ||
-                    word.folder.toLowerCase().includes(term)
+                    word.meaning.toLowerCase().includes(term)
                 );
             }
             
@@ -421,9 +457,46 @@
             if (filteredWords.length === 0) {
                 const noWordsMsg = document.createElement('div');
                 noWordsMsg.className = 'text-secondary';
-                noWordsMsg.textContent = searchTerm ? 'No matching words found' : 'No words added yet';
+                
+                if (folderFilter && searchTerm) {
+                    noWordsMsg.textContent = `No matching words found in folder "${folderFilter}"`;
+                } else if (folderFilter) {
+                    noWordsMsg.textContent = `No words in folder "${folderFilter}"`;
+                } else if (searchTerm) {
+                    noWordsMsg.textContent = 'No matching words found';
+                } else {
+                    noWordsMsg.textContent = 'No words added yet';
+                }
+                
                 wordsList.appendChild(noWordsMsg);
                 return;
+            }
+            
+            // Add folder filter indicator if active
+            if (folderFilter) {
+                const filterIndicator = document.createElement('div');
+                filterIndicator.className = 'mb-2';
+                filterIndicator.style.display = 'flex';
+                filterIndicator.style.justifyContent = 'space-between';
+                filterIndicator.style.alignItems = 'center';
+                filterIndicator.style.padding = '0.5rem';
+                filterIndicator.style.backgroundColor = 'var(--bg-secondary)';
+                filterIndicator.style.borderRadius = '0.25rem';
+                
+                const filterText = document.createElement('div');
+                filterText.textContent = `Showing folder: ${folderFilter}`;
+                
+                const clearBtn = document.createElement('button');
+                clearBtn.className = 'btn';
+                clearBtn.textContent = 'Clear';
+                clearBtn.style.padding = '0.15rem 0.5rem';
+                clearBtn.style.fontSize = '0.75rem';
+                clearBtn.addEventListener('click', () => renderWordsList(searchTerm));
+                
+                filterIndicator.appendChild(filterText);
+                filterIndicator.appendChild(clearBtn);
+                
+                wordsList.appendChild(filterIndicator);
             }
             
             // Create list of words
@@ -486,15 +559,99 @@
             folders.forEach(folder => {
                 const count = vocabData.words.filter(word => word.folder === folder).length;
                 const folderItem = document.createElement('div');
-                folderItem.textContent = `${folder} (${count})`;
+                folderItem.style.display = 'flex';
+                folderItem.style.justifyContent = 'space-between';
+                folderItem.style.alignItems = 'center';
+                folderItem.style.padding = '0.25rem 0';
+                folderItem.style.cursor = 'pointer';
+                
+                const folderName = document.createElement('span');
+                folderName.textContent = `${folder} (${count})`;
+                
+                const viewBtn = document.createElement('button');
+                viewBtn.className = 'btn';
+                viewBtn.textContent = 'View';
+                viewBtn.style.padding = '0.15rem 0.5rem';
+                viewBtn.style.fontSize = '0.75rem';
+                
+                // Add click event to filter words by folder
+                viewBtn.addEventListener('click', () => {
+                    renderWordsList('', folder);
+                });
+                
+                folderItem.appendChild(folderName);
+                folderItem.appendChild(viewBtn);
+                
                 foldersListEl.appendChild(folderItem);
+            });
+            
+            // Also update the study folder select dropdown
+            updateStudyFolderSelect(folders);
+        }
+        
+        // Update the folder select dropdowns
+        function updateStudyFolderSelect(folders) {
+            // Clear current options except "All Folders" in study dropdown
+            while (studyFolderSelect.options.length > 1) {
+                studyFolderSelect.remove(1);
+            }
+            
+            // Clear all options in folder management dropdown
+            folderManageSelect.innerHTML = '';
+            
+            // Add folder options to both dropdowns
+            folders.forEach(folder => {
+                // Add to study dropdown
+                const studyOption = document.createElement('option');
+                studyOption.value = folder;
+                studyOption.textContent = folder;
+                studyFolderSelect.appendChild(studyOption);
+                
+                // Add to folder management dropdown
+                const manageOption = document.createElement('option');
+                manageOption.value = folder;
+                manageOption.textContent = folder;
+                folderManageSelect.appendChild(manageOption);
             });
         }
         
+        // Rename folder
+        function renameFolder(oldName, newName) {
+            if (!newName || oldName === newName) return;
+            
+            // Check if new folder name already exists
+            const folderExists = vocabData.words.some(word => word.folder === newName);
+            if (folderExists) {
+                const mergeConfirm = confirm(`Folder "${newName}" already exists. Merge folders?`);
+                if (!mergeConfirm) return;
+            }
+            
+            // Update all words in the old folder
+            vocabData.words.forEach(word => {
+                if (word.folder === oldName) {
+                    word.folder = newName;
+                }
+            });
+            
+            // Save and update UI
+            saveData();
+            renderWordsList();
+            renderFoldersList();
+        }
+        
         // Prepare study session
-        function prepareStudySession() {
-            // Reset study queue with all words
-            studyQueue = [...vocabData.words];
+        function prepareStudySession(folderName = 'all') {
+            // Reset study queue with filtered words
+            if (folderName === 'all') {
+                studyQueue = [...vocabData.words];
+            } else {
+                studyQueue = vocabData.words.filter(word => word.folder === folderName);
+            }
+            
+            // Hide the study settings and show the flashcard
+            document.querySelector('.card.mb-4').style.display = 'none';
+            document.querySelector('.card.flashcard').style.display = 'flex';
+            document.querySelector('.rating-buttons').style.display = 'flex';
             
             // Shuffle the queue
             studyQueue.sort(() => Math.random() - 0.5);
@@ -506,7 +663,9 @@
                 loadCurrentCard();
             } else {
                 // Show message if no words to study
-                document.getElementById('studyWord').textContent = 'No words to study';
+                document.getElementById('studyWord').textContent = folderName === 'all' ? 
+                    'No words to study' : 
+                    `No words in folder "${folderName}"`;
                 document.getElementById('studyMeaning').textContent = 'Add words in the Library section';
                 document.getElementById('studyExample').textContent = '';
                 document.getElementById('studyNotes').textContent = '';
@@ -578,7 +737,11 @@
                 viewStudy.classList.remove('hidden');
                 btnLibrary.classList.remove('btn-primary');
                 btnStudy.classList.add('btn-primary');
-                prepareStudySession();
+                
+                // Reset study view to show settings
+                document.querySelector('.card.mb-4').style.display = 'block';
+                document.querySelector('.card.flashcard').style.display = 'none';
+                document.querySelector('.rating-buttons').style.display = 'none';
             }
         }
 
@@ -607,6 +770,19 @@
         btnStudy.addEventListener('click', () => switchView('study'));
         btnToggleDark.addEventListener('click', toggleDarkMode);
         flashcard.addEventListener('click', toggleFlashcard);
+        btnStartStudy.addEventListener('click', () => prepareStudySession(studyFolderSelect.value));
+        btnRenameFolder.addEventListener('click', () => {
+            const oldName = folderManageSelect.value;
+            if (!oldName) {
+                alert('Please select a folder to rename');
+                return;
+            }
+            
+            const newName = prompt(`Rename folder "${oldName}" to:`, oldName);
+            if (newName) {
+                renameFolder(oldName, newName);
+            }
+        });
         
         // Form submission
         wordForm.addEventListener('submit', (e) => {
